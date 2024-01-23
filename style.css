@@ -1,0 +1,14 @@
+canvas {
+  left: 0;
+  top: 0;
+  position: fixed;
+}
+
+body {
+  position: absolute;
+}
+
+p {
+  position: relative;
+  color: white;
+}
