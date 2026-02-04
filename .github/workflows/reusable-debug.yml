@@ -1,0 +1,20 @@
+name: Reusable Debug Workflow
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print all event context
+        run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.event.action: ${{ github.event.action }}"
+          echo "github.workflow: ${{ github.workflow }}"
+          echo "github.actor: ${{ github.actor }}"
+          echo "github.ref: ${{ github.ref }}"
+          
+      - name: Print full github context
+        run: echo '${{ toJSON(github) }}'
