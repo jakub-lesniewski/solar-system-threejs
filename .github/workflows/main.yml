@@ -1,0 +1,102 @@
+name: Test Reusable Workflow
+run-name: "[TEST] Reusable workflow test"
+
+on:
+  workflow_call:
+    inputs:
+      test_with_string_comparison:
+        description: "Boolean from string comparison"
+        type: boolean
+        required: true
+      test_with_fromjson:
+        description: "Boolean from fromJSON"
+        type: boolean
+        required: true
+      parent_event_name:
+        description: "Parent workflow event name"
+        type: string
+        required: true
+
+jobs:
+  test_conditionals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Always runs - Debug info
+        run: |
+          echo "=========================================="
+          echo "ALWAYS RUNS - BASIC DEBUG"
+          echo "=========================================="
+          echo "Current github.event_name: ${{ github.event_name }}"
+          echo "Parent event_name: ${{ inputs.parent_event_name }}"
+          echo "Input test_with_string_comparison: ${{ inputs.test_with_string_comparison }}"
+          echo "Input test_with_fromjson: ${{ inputs.test_with_fromjson }}"
+          echo ""
+          echo "Type checks:"
+          echo "test_with_string_comparison type: ${{ toJSON(inputs.test_with_string_comparison) }}"
+          echo "test_with_fromjson type: ${{ toJSON(inputs.test_with_fromjson) }}"
+          echo ""
+
+      - name: Test - workflow_call event name
+        if: ${{ github.event_name == 'workflow_call' }}
+        run: |
+          echo "✓ SUCCESS: github.event_name is 'workflow_call'"
+          echo "This proves the called workflow sees event_name as 'workflow_call'"
+
+      - name: Test - schedule event name  
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+          echo "✓ This would mean github.event_name is 'schedule' (YOUR theory)"
+          echo "If you see this, the event_name passes through from parent"
+
+      - name: Test - String comparison boolean (YOUR theory)
+        if: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.test_with_string_comparison }}
+        run: |
+          echo "✓ SUCCESS: String comparison boolean works!"
+          echo "test_with_string_comparison = ${{ inputs.test_with_string_comparison }}"
+          echo "This is the current approach in your workflow"
+
+      - name: Test - fromJSON boolean (MY theory)
+        if: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && inputs.test_with_fromjson }}
+        run: |
+          echo "✓ SUCCESS: fromJSON boolean works!"
+          echo "test_with_fromjson = ${{ inputs.test_with_fromjson }}"
+          echo "This is my proposed fix"
+
+      - name: Test - Direct string comparison check
+        if: ${{ inputs.test_with_string_comparison }}
+        run: |
+          echo "✓ String comparison boolean is truthy"
+          
+      - name: Test - Direct fromJSON check
+        if: ${{ inputs.test_with_fromjson }}
+        run: |
+          echo "✓ fromJSON boolean is truthy"
+
+      - name: Test - Both must be true
+        if: ${{ inputs.test_with_string_comparison && inputs.test_with_fromjson }}
+        run: |
+          echo "✓ BOTH booleans evaluate to true!"
+          echo "If you see this, both approaches work equally"
+
+      - name: Final Summary
+        if: always()
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "TEST SUMMARY"
+          echo "=========================================="
+          echo "Check the steps above to see which conditions passed"
+          echo ""
+          echo "Expected results when triggered by schedule:"
+          echo "- github.event_name should be: workflow_call (MY theory) OR schedule (YOUR theory)"
+          echo "- String comparison boolean should: work or fail"
+          echo "- fromJSON boolean should: work or fail"
+          echo ""
+          echo "If string comparison step DIDN'T run but fromJSON DID:"
+          echo "  → MY theory is correct, use fromJSON"
+          echo ""
+          echo "If NEITHER step ran:"
+          echo "  → YOUR theory is correct, event_name is 'schedule'"
+          echo ""
+          echo "If BOTH steps ran:"
+          echo "  → Issue is elsewhere in the workflow logic"
