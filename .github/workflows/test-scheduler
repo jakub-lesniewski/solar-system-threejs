@@ -1,0 +1,35 @@
+name: Test Scheduler
+run-name: "[TEST] Testing event_name and boolean conditionals"
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      test_boolean:
+        description: "Test boolean input"
+        type: boolean
+        default: true
+
+jobs:
+  prepare_test_inputs:
+    runs-on: ubuntu-latest
+    outputs:
+      test_boolean_output: ${{ inputs.test_boolean || (github.event_name=='schedule' && true) }}
+      event_name: ${{ github.event_name }}
+    steps:
+      - name: Debug prepare job
+        run: |
+          echo "=== PREPARE JOB DEBUG ==="
+          echo "Event name: ${{ github.event_name }}"
+          echo "Input test_boolean: ${{ inputs.test_boolean }}"
+          echo "Computed test_boolean_output: ${{ inputs.test_boolean || (github.event_name=='schedule' && true) }}"
+          echo "Output type: $(echo '${{ inputs.test_boolean || (github.event_name=='schedule' && true) }}' | cat -v)"
+
+  call_test_workflow:
+    needs: prepare_test_inputs
+    uses: ./.github/workflows/test-reusable.yml
+    with:
+      test_with_string_comparison: ${{ needs.prepare_test_inputs.outputs.test_boolean_output=='true' }}
+      test_with_fromjson: ${{ fromJSON(needs.prepare_test_inputs.outputs.test_boolean_output) }}
+      parent_event_name: ${{ needs.prepare_test_inputs.outputs.event_name }}
